@@ -1,11 +1,17 @@
 package com.example.projeto1obimestre
 
+import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
@@ -13,6 +19,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.nio.charset.Charset
 
+@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
         getProductWEB()
     }
+
 
     fun getProductWEB(){
 
@@ -51,6 +59,11 @@ class MainActivity : AppCompatActivity() {
 
                         line.addView(novoTextView)
 
+                        var novoimgview = ImageView(this)
+                        DownloadImageFromInternet(novoimgview).execute(img)
+                        novoimgview.layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT)
                     }
                 },
                 Response.ErrorListener { error ->
@@ -63,6 +76,30 @@ class MainActivity : AppCompatActivity() {
             }
         queue.add(stringReq)
 
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    @Suppress("DEPRECATION")
+    private inner class DownloadImageFromInternet(var imageView: ImageView) : AsyncTask<String, Void, Bitmap?>() {
+        init {
+            Toast.makeText(applicationContext, "Carregando imagem", Toast.LENGTH_SHORT).show()
+        }
+        override fun doInBackground(vararg urls: String): Bitmap? {
+            val imageURL = urls[0]
+            var image: Bitmap? = null
+            try {
+                val `in` = java.net.URL(imageURL).openStream()
+                image = BitmapFactory.decodeStream(`in`)
+            }
+            catch (e: Exception) {
+                Log.e("Error Message", e.message.toString())
+                e.printStackTrace()
+            }
+            return image
+        }
+        override fun onPostExecute(result: Bitmap?) {
+            imageView.setImageBitmap(result)
+        }
     }
 
 }
