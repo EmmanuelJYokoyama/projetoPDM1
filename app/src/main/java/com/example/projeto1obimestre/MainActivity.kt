@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
                         var qtd = item.get("qtd").toString();
                         var img = item.get("img").toString();
                         var novoTextView = TextView(this)
+
                         novoTextView.text =  idProduto + " - " + type
                         novoTextView.layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
