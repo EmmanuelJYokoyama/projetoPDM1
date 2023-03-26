@@ -1,13 +1,13 @@
-package com.example.projeto1obimestre
+package com.example.projeto1bim
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.AsyncTask
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
@@ -15,50 +15,64 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.nio.charset.Charset
 
-@Suppress("DEPRECATION")
+
 class MainActivity : AppCompatActivity() {
     lateinit var btn_finalizar: Button
-    lateinit var cb_P: CheckBox
     lateinit var cb_R: CheckBox
+    lateinit var cb_P: CheckBox
+    lateinit var textV: TextView
+    lateinit var text_Pedido: TextView
+    lateinit var l_layout : LinearLayout
+    lateinit var l_layout2 : LinearLayout
+    var list: ArrayList<Float> = arrayListOf()
     lateinit var cb_S: CheckBox
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         init()
 
         getProductWEB(cb_P.isChecked, cb_R.isChecked, cb_S.isChecked)
 
 
-        cb_P.setOnCheckedChangeListener{buttonView, isChecked ->
+        cb_R.setOnCheckedChangeListener{buttonView, isChecked ->
+            l_layout2.removeAllViews()
             getProductWEB(cb_P.isChecked, cb_R.isChecked, cb_S.isChecked)
 
         }
 
-        cb_R.setOnCheckedChangeListener{buttonView, isChecked ->
+        cb_P.setOnCheckedChangeListener{buttonView, isChecked ->
+            l_layout2.removeAllViews()
             getProductWEB(cb_P.isChecked, cb_R.isChecked, cb_S.isChecked)
 
         }
 
         cb_S.setOnCheckedChangeListener{buttonView, isChecked ->
+            l_layout2.removeAllViews()
             getProductWEB(cb_P.isChecked, cb_R.isChecked, cb_S.isChecked)
 
+        }
+
+        btn_finalizar.setOnClickListener {
+            textV.text = ""
+            enviarPost()
         }
 
     }
 
     fun init(){
         btn_finalizar = findViewById(R.id.btn)
-        cb_P = findViewById(R.id.check_Pizza)
         cb_R = findViewById(R.id.check_Refri)
+        cb_P = findViewById(R.id.check_Pizza)
+        textV = findViewById(R.id.txtvw)
+        text_Pedido = findViewById(R.id.pedido)
         cb_S= findViewById(R.id.check_Sobre)
+        l_layout = findViewById(R.id.linear1)
+        l_layout2 = findViewById(R.id.linear2)
     }
 
     fun getProductWEB(cbx_R: Boolean, cbx_P: Boolean, cbx_S: Boolean){
 
-        val line: LinearLayout = findViewById(R.id.linear)
         val queue = Volley.newRequestQueue(this)
         val url = "http://helioesperidiao.com/api.php"
         val requestBody = "id=1" + "&msg=test_msg"
@@ -83,7 +97,7 @@ class MainActivity : AppCompatActivity() {
                         var novoTextView = TextView(this)
 
                         if(cbx_R || cbx_P || cbx_S){
-                            if((cbx_R && (type == " refrigerante")) || (cbx_P && (type == "pizza")) || (cbx_S && (type == "sobremesa")))
+                            if((cbx_R && (type == "refrigerante")) || (cbx_P && (type == "pizza")) || (cbx_S && (type == "sobremesa")))
                                 views_dinamicas(idProduto, type, nome, desc, qtd, preco, img)
 
                         }else{
@@ -104,9 +118,9 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+
     fun views_dinamicas(idProduto: String, type: String, nome:String, desc:String, qtd:String, preco:String, img:String){
-        val linearProdutos: LinearLayout = findViewById(R.id.linear)
-        linearProdutos.scrollY
+        l_layout2.scrollY
         var bloco = LinearLayout(this)
 
         //bloco linear layout de produto
@@ -134,7 +148,12 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         )
-        novoTextView.text = "${type} -> ${nome} R$ ${preco} \n "//${desc}
+        if(type=="refrigerante"){
+            novoTextView.text = "Código: ${idProduto} \nProduto: ${nome} \nPreço: R$ ${preco} \nDesc: ${desc}"
+        }else{
+            novoTextView.text = "Código: ${idProduto} \nPrduto: ${nome} \nQuantidade: ${qtd} \nPreço: R$ ${preco} \nDesc: ${desc} "
+        }
+
 
         //botao para adicionar produto em pedido
         val adicionar = Button(this)
@@ -144,14 +163,14 @@ class MainActivity : AppCompatActivity() {
         )
         adicionar.text = "Adicionar ao pedido"
         adicionar.setOnClickListener {
-            adicionarPedido()
+            adicionarPedido(preco)
         }
 
         bloco.addView(imagev)
         bloco.addView(novoTextView)
         bloco.addView(adicionar)
 
-        linearProdutos.addView(bloco)
+        l_layout2.addView(bloco)
         var espaco = TextView(this)
 
         espaco.layoutParams = LinearLayout.LayoutParams(
@@ -160,14 +179,54 @@ class MainActivity : AppCompatActivity() {
         )
         espaco.text = "   "
         espaco.height = 100
-        linearProdutos.addView(espaco)
+        l_layout2.addView(espaco)
 
     }
 
-    fun adicionarPedido(){
+    fun adicionarPedido(preco: String){
 
+        var valor: Float = 0f
+        valor = preco.toFloat()
+        list.add(valor)
 
-        var linearPedido: LinearLayout = findViewById(R.id.linear)
+        var total = list.sum()
+        textV.text = String.format("%.2f", total)
+
+    }
+
+    fun enviarPost(){
+        val queue = Volley.newRequestQueue(this)
+        val url = "http://helioesperidiao.com/api2.php"
+        val requestBody = "id=1" + "&msg=test_msg"
+
+        val stringReq : StringRequest =
+            object : StringRequest(Method.POST, url,
+                Response.Listener { response ->
+
+                    var resposta = response.toString()
+                    val array = JSONArray(resposta)
+                    val tamanho =array.length()
+
+                    for (i in 0..tamanho ) {
+                        val item: JSONObject = array.getJSONObject(i) // recupera o objeto na posição dentro do array
+                        var idPedido = item.put("idPedido", item)
+                        var status = item.put("status", item[])
+                        var filaEspera = item.put("filaEspera", item[i])
+
+                        textV.text = "Pedido: ${idPedido} \nStatus: ${status} \nPosição na fila: ${filaEspera}"
+
+                    }
+                },
+                Response.ErrorListener { error ->
+                    Log.d("API", "error => $error")
+                }
+            ){
+                override fun getBody(): ByteArray {
+                    return requestBody.toByteArray(Charset.defaultCharset())
+                }
+            }
+        queue.add(stringReq)
+
 
     }
 
