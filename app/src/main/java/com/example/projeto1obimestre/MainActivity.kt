@@ -1,4 +1,4 @@
-package com.example.projeto1bim
+package com.example.testes
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
     fun getProductWEB(cbx_R: Boolean, cbx_P: Boolean, cbx_S: Boolean){
 
         val queue = Volley.newRequestQueue(this)
-        val url = "http://helioesperidiao.com/api.php"
+        val url = "http://helioesperidiao1.hospedagemdesites.ws/api.php"
         val requestBody = "id=1" + "&msg=test_msg"
 
         val stringReq : StringRequest =
@@ -132,16 +132,16 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         )
 
-        //criar imagem
-        var imagev = ImageView(this)
-        imagev.layoutParams = LinearLayout.LayoutParams(
+        //criar image view
+        var imageVW = ImageView(this)
+        imageVW.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         )
         //carregar img
-        DownloadImageFromInternet(imagev).execute(img)
+        DownloadImageFromInternet(imageVW).execute(img)
 
-        //texto do produto
+        //texto
         var novoTextView = TextView(this)
 
         novoTextView.layoutParams = LinearLayout.LayoutParams(
@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        //botao para adicionar produto em pedido
+        //botao adicionar produto - pedido
         val adicionar = Button(this)
         adicionar.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -166,7 +166,7 @@ class MainActivity : AppCompatActivity() {
             adicionarPedido(preco)
         }
 
-        bloco.addView(imagev)
+        bloco.addView(imageVW)
         bloco.addView(novoTextView)
         bloco.addView(adicionar)
 
@@ -195,40 +195,56 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun enviarPost(){
-        val queue = Volley.newRequestQueue(this)
-        val url = "http://helioesperidiao.com/api2.php"
-        val requestBody = "id=1" + "&msg=test_msg"
 
-        val stringReq : StringRequest =
+        val jsonBody = JSONObject()
+
+        for (item in list) {
+            jsonBody.put("idProduto", item[0])
+            jsonBody.put("nome", item[1])
+            jsonBody.put("number", item[2])
+            jsonBody.put("preco", item[3])
+        }
+
+
+        val queue = Volley.newRequestQueue(this)
+        val url = "http://helioesperidiao1.hospedagemdesites.ws/api2.php"
+        val request : StringRequest =
             object : StringRequest(Method.POST, url,
                 Response.Listener { response ->
+                    val res = response.toString()
+                    val json = JSONObject(res)
 
-                    var resposta = response.toString()
-                    val array = JSONArray(resposta)
-                    val tamanho =array.length()
+                    val idPedido = json.get("idPedido")
+                    val status = json.get("status")
+                    val filaEspera = json.get("filaEspera")
 
-                    for (i in 0..tamanho ) {
-                        val item: JSONObject = array.getJSONObject(i) // recupera o objeto na posição dentro do array
-                        var idPedido = item.put("idPedido", item)
-                        var status = item.put("status", item[])
-                        var filaEspera = item.put("filaEspera", item[i])
+                    l_layout.removeAllViews()
+                    list = ArrayList()
 
-                        textV.text = "Pedido: ${idPedido} \nStatus: ${status} \nPosição na fila: ${filaEspera}"
-
-                    }
+                    val newTextView = TextView(this)
+                    newTextView.text = "ID: $idPedido\n STATUS: $status\n FILA DE ESPERA: $filaEspera\n"
+                    l_layout.layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    l_layout.addView(newTextView)
                 },
                 Response.ErrorListener { error ->
                     Log.d("API", "error => $error")
                 }
-            ){
+            ) {
                 override fun getBody(): ByteArray {
-                    return requestBody.toByteArray(Charset.defaultCharset())
+                    return jsonBody.toString().toByteArray(Charsets.UTF_8)
+                }
+
+                override fun getBodyContentType(): String {
+                    return "application/json"
                 }
             }
-        queue.add(stringReq)
-
-
+        queue.add(request)
     }
+
+
 
     @SuppressLint("StaticFieldLeak")
     @Suppress("DEPRECATION")
